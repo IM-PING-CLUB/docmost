@@ -19,7 +19,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import classes from "./settings.module.css";
 import { useTranslation } from "react-i18next";
-import { isCloud } from "@/lib/config.ts";
+import { isCloud, isOemFeatureHidden } from "@/lib/config.ts";
 import useUserRole from "@/hooks/use-user-role.tsx";
 import { useAtom } from "jotai";
 import { entitlementAtom } from "@/ee/entitlement/entitlement-atom";
@@ -138,6 +138,15 @@ const groupedData: DataGroup[] = [
   },
 ];
 
+const OEM_HIDDEN_PATHS: Record<string, string> = {
+  "/settings/account/api-keys": "OEM_HIDE_API_KEYS",
+  "/settings/security": "OEM_HIDE_SECURITY_SSO",
+  "/settings/api-keys": "OEM_HIDE_API_MANAGEMENT",
+  "/settings/audit": "OEM_HIDE_AUDIT_LOG",
+  "/settings/ai": "OEM_HIDE_AI_SETTINGS",
+  "/settings/license": "OEM_HIDE_LICENSE",
+};
+
 export default function SettingsSidebar() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -161,6 +170,8 @@ export default function SettingsSidebar() {
     if (item.env === "selfhosted" && isCloud()) return false;
     if (item.role === "admin" && !isAdmin) return false;
     if (item.role === "owner" && !isOwner) return false;
+    const oemEnvVar = OEM_HIDDEN_PATHS[item.path];
+    if (oemEnvVar && isOemFeatureHidden(oemEnvVar)) return false;
     return true;
   };
 
