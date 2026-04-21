@@ -1,5 +1,5 @@
 import { useAppVersion } from "@/features/workspace/queries/workspace-query.ts";
-import { isCloud } from "@/lib/config.ts";
+import { isCloud, isOemFeatureHidden } from "@/lib/config.ts";
 import classes from "@/components/settings/settings.module.css";
 import { Indicator, Text, Tooltip } from "@mantine/core";
 import React from "react";
@@ -8,6 +8,9 @@ import { useTranslation } from "react-i18next";
 
 export default function AppVersion() {
   const { t } = useTranslation();
+  if (isOemFeatureHidden("OEM_HIDE_VERSION_UPDATE")) {
+    return null;
+  }
   const { data: appVersion } = useAppVersion(!isCloud());
   let hasUpdate = false;
   try {
