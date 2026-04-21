@@ -43,6 +43,14 @@ export function isCloud(): boolean {
   return castToBoolean(getConfigValue("CLOUD"));
 }
 
+export function isOemMode(): boolean {
+  return castToBoolean(getConfigValue("OEM"));
+}
+
+export function isOemFeatureHidden(feature: string): boolean {
+  return isOemMode() && castToBoolean(getConfigValue(feature));
+}
+
 export function getAvatarUrl(
   avatarUrl: string,
   type: AvatarIconType = AvatarIconType.AVATAR,
