@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
     OEM_HIDE_AI_SETTINGS,
     OEM_HIDE_VERSION_UPDATE,
     OEM_HIDE_LICENSE,
+    OEM_APP_NAME,
   } = loadEnv(mode, envPath, "");
 
   return {
@@ -47,6 +48,7 @@ export default defineConfig(({ mode }) => {
         OEM_HIDE_AI_SETTINGS,
         OEM_HIDE_VERSION_UPDATE,
         OEM_HIDE_LICENSE,
+        OEM_APP_NAME,
       },
       APP_VERSION: JSON.stringify(process.env.npm_package_version),
     },

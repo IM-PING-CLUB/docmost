@@ -70,6 +70,7 @@ jobs:
             OEM_HIDE_AI_SETTINGS=${{ vars.OEM_HIDE_AI_SETTINGS || false }}
             OEM_HIDE_VERSION_UPDATE=${{ vars.OEM_HIDE_VERSION_UPDATE || false }}
             OEM_HIDE_LICENSE=${{ vars.OEM_HIDE_LICENSE || false }}
+            OEM_APP_NAME=${{ vars.OEM_APP_NAME || 'Docmost' }}
 
       - name: Export digest
         run: |

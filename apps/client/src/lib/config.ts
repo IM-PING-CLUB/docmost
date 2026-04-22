@@ -10,7 +10,7 @@ declare global {
 }
 
 export function getAppName(): string {
-  return "Docmost";
+  return getConfigValue("OEM_APP_NAME", "Docmost");
 }
 
 export function getAppUrl(): string {

@@ -12,6 +12,7 @@ import React from "react";
 import TopMenu from "@/components/layouts/global/top-menu.tsx";
 import { Link, useLocation } from "react-router-dom";
 import { IconSparkles } from "@tabler/icons-react";
+import { getAppName } from "@/lib/config.ts";
 import useToggleAside from "@/hooks/use-toggle-aside.tsx";
 import APP_ROUTE from "@/lib/app-route.ts";
 import { useAtom } from "jotai";
@@ -99,7 +100,7 @@ export function AppHeader() {
               style={{ userSelect: "none" }}
               visibleFrom="sm"
             >
-              Docmost
+              {getAppName()}
             </Text>
           </Link>
 
