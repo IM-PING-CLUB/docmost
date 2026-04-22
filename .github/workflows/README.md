@@ -13,8 +13,6 @@ Builds and pushes Docker images to AWS ECR on version tags. No GitHub Release cr
 | Secret | Description |
 |--------|-------------|
 | `AWS_OIDC_ROLE_ARN` | ARN of IAM role with ECR push permissions |
-| `BUILD_APP_ID` | GitHub App ID for submodule checkout |
-| `BUILD_APP_PRIVATE_KEY` | GitHub App private key for submodule checkout |
 
 ### Required GitHub Variables
 
