@@ -61,6 +61,15 @@ jobs:
           outputs: type=image,name=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.suffix }}
           cache-to: type=gha,scope=${{ matrix.suffix }},mode=max
+          build-args: |
+            OEM=${{ vars.OEM || false }}
+            OEM_HIDE_API_KEYS=${{ vars.OEM_HIDE_API_KEYS || false }}
+            OEM_HIDE_SECURITY_SSO=${{ vars.OEM_HIDE_SECURITY_SSO || false }}
+            OEM_HIDE_API_MANAGEMENT=${{ vars.OEM_HIDE_API_MANAGEMENT || false }}
+            OEM_HIDE_AUDIT_LOG=${{ vars.OEM_HIDE_AUDIT_LOG || false }}
+            OEM_HIDE_AI_SETTINGS=${{ vars.OEM_HIDE_AI_SETTINGS || false }}
+            OEM_HIDE_VERSION_UPDATE=${{ vars.OEM_HIDE_VERSION_UPDATE || false }}
+            OEM_HIDE_LICENSE=${{ vars.OEM_HIDE_LICENSE || false }}
 
       - name: Export digest
         run: |
