@@ -170,10 +170,7 @@ export class EnvironmentService {
   }
 
   isCloud(): boolean {
-    const cloudConfig = this.configService
-      .get<string>('CLOUD', 'false')
-      .toLowerCase();
-    return cloudConfig === 'true';
+    return this.getBoolean('CLOUD');
   }
 
   isSelfHosted(): boolean {
@@ -220,6 +217,42 @@ export class EnvironmentService {
 
   getPostHogKey(): string {
     return this.configService.get<string>('POSTHOG_KEY');
+  }
+
+  isOem(): boolean {
+    return this.getBoolean('OEM');
+  }
+
+  isOemHideApiKeys(): boolean {
+    return this.getBoolean('OEM_HIDE_API_KEYS');
+  }
+
+  isOemHideSecuritySso(): boolean {
+    return this.getBoolean('OEM_HIDE_SECURITY_SSO');
+  }
+
+  isOemHideApiManagement(): boolean {
+    return this.getBoolean('OEM_HIDE_API_MANAGEMENT');
+  }
+
+  isOemHideAuditLog(): boolean {
+    return this.getBoolean('OEM_HIDE_AUDIT_LOG');
+  }
+
+  isOemHideAiSettings(): boolean {
+    return this.getBoolean('OEM_HIDE_AI_SETTINGS');
+  }
+
+  isOemHideVersionUpdate(): boolean {
+    return this.getBoolean('OEM_HIDE_VERSION_UPDATE');
+  }
+
+  isOemHideLicense(): boolean {
+    return this.getBoolean('OEM_HIDE_LICENSE');
+  }
+
+  getOemAppName(): string {
+    return this.configService.get<string>('OEM_APP_NAME', 'Docmost');
   }
 
   getSearchDriver(): string {
@@ -303,5 +336,12 @@ export class EnvironmentService {
 
   getClickHouseUrl(): string {
     return this.configService.get<string>('CLICKHOUSE_URL');
+  }
+
+  private getBoolean(key: string, defaultValue: string = 'false'): boolean {
+    return (
+      this.configService.get<string>(key, defaultValue)?.toLowerCase() ===
+      'true'
+    );
   }
 }

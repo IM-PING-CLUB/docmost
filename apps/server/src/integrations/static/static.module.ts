@@ -35,6 +35,18 @@ export class StaticModule implements OnModuleInit {
         ENV: this.environmentService.getNodeEnv(),
         APP_URL: this.environmentService.getAppUrl(),
         CLOUD: this.environmentService.isCloud(),
+        OEM: this.environmentService.isOem(),
+        OEM_HIDE_API_KEYS: this.environmentService.isOemHideApiKeys(),
+        OEM_HIDE_SECURITY_SSO:
+          this.environmentService.isOemHideSecuritySso(),
+        OEM_HIDE_API_MANAGEMENT:
+          this.environmentService.isOemHideApiManagement(),
+        OEM_HIDE_AUDIT_LOG: this.environmentService.isOemHideAuditLog(),
+        OEM_HIDE_AI_SETTINGS: this.environmentService.isOemHideAiSettings(),
+        OEM_HIDE_VERSION_UPDATE:
+          this.environmentService.isOemHideVersionUpdate(),
+        OEM_HIDE_LICENSE: this.environmentService.isOemHideLicense(),
+        OEM_APP_NAME: this.environmentService.getOemAppName(),
         FILE_UPLOAD_SIZE_LIMIT:
           this.environmentService.getFileUploadSizeLimit(),
         FILE_IMPORT_SIZE_LIMIT:

@@ -85,11 +85,11 @@ export function AppHeader() {
             />
           </Tooltip>
 
-          <Link to="/home" className={classes.brand} aria-label="Docmost">
+          <Link to="/home" className={classes.brand} aria-label={getAppName()}>
             <Box hiddenFrom="sm" className={classes.brandIcon}>
               <img
                 src="/icons/favicon-32x32.png"
-                alt="Docmost"
+                alt={getAppName()}
                 width={22}
                 height={22}
               />
