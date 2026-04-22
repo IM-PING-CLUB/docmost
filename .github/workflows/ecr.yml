@@ -16,7 +16,7 @@ permissions:
 
 env:
   VERSION: ${{ inputs.version || github.ref_name }}
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-1' }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'docmost' }}
 
 jobs:
