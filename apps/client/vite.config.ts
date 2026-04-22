@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
     OEM_HIDE_VERSION_UPDATE,
     OEM_HIDE_LICENSE,
     OEM_APP_NAME,
+    OEM_HIDE_VERIFIED_PAGES,
   } = loadEnv(mode, envPath, "");
 
   return {
@@ -49,6 +50,7 @@ export default defineConfig(({ mode }) => {
         OEM_HIDE_VERSION_UPDATE,
         OEM_HIDE_LICENSE,
         OEM_APP_NAME,
+        OEM_HIDE_VERIFIED_PAGES,
       },
       APP_VERSION: JSON.stringify(process.env.npm_package_version),
     },

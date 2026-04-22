@@ -21,80 +21,13 @@ env:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-            suffix: amd64
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-            suffix: arm64
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Create empty EE placeholder (skip private submodule)
         run: rm -rf apps/server/src/ee && mkdir -p apps/server/src/ee
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          outputs: type=image,name=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.suffix }}
-          cache-to: type=gha,scope=${{ matrix.suffix }},mode=max
-          build-args: |
-            OEM=${{ vars.OEM || false }}
-            OEM_HIDE_API_KEYS=${{ vars.OEM_HIDE_API_KEYS || false }}
-            OEM_HIDE_SECURITY_SSO=${{ vars.OEM_HIDE_SECURITY_SSO || false }}
-            OEM_HIDE_API_MANAGEMENT=${{ vars.OEM_HIDE_API_MANAGEMENT || false }}
-            OEM_HIDE_AUDIT_LOG=${{ vars.OEM_HIDE_AUDIT_LOG || false }}
-            OEM_HIDE_AI_SETTINGS=${{ vars.OEM_HIDE_AI_SETTINGS || false }}
-            OEM_HIDE_VERSION_UPDATE=${{ vars.OEM_HIDE_VERSION_UPDATE || false }}
-            OEM_HIDE_LICENSE=${{ vars.OEM_HIDE_LICENSE || false }}
-            OEM_APP_NAME=${{ vars.OEM_APP_NAME || 'Docmost' }}
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: digest-${{ matrix.suffix }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-
-  push:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download digests
-        uses: actions/download-artifact@v4
-        with:
-          pattern: digest-*
-          path: /tmp/digests
-          merge-multiple: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -120,8 +53,23 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }},enable=${{ !contains(env.VERSION, '-') }}
             type=raw,value=latest,enable=${{ !contains(env.VERSION, '-') }}
 
-      - name: Create manifest list and push
-        working-directory: /tmp/digests
-        run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}@$(printf 'sha256:%s ' *)
+      - name: Build and push to ECR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,scope=amd64,mode=max
+          build-args: |
+            OEM=${{ vars.OEM || false }}
+            OEM_HIDE_API_KEYS=${{ vars.OEM_HIDE_API_KEYS || false }}
+            OEM_HIDE_SECURITY_SSO=${{ vars.OEM_HIDE_SECURITY_SSO || false }}
+            OEM_HIDE_API_MANAGEMENT=${{ vars.OEM_HIDE_API_MANAGEMENT || false }}
+            OEM_HIDE_AUDIT_LOG=${{ vars.OEM_HIDE_AUDIT_LOG || false }}
+            OEM_HIDE_AI_SETTINGS=${{ vars.OEM_HIDE_AI_SETTINGS || false }}
+            OEM_HIDE_VERSION_UPDATE=${{ vars.OEM_HIDE_VERSION_UPDATE || false }}
+            OEM_HIDE_LICENSE=${{ vars.OEM_HIDE_LICENSE || false }}
+            OEM_HIDE_VERIFIED_PAGES=${{ vars.OEM_HIDE_VERIFIED_PAGES || false }}
+            OEM_APP_NAME=${{ vars.OEM_APP_NAME || 'Docmost' }}

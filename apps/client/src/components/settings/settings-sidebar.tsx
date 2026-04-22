@@ -145,6 +145,7 @@ const OEM_HIDDEN_PATHS: Record<string, string> = {
   "/settings/audit": "OEM_HIDE_AUDIT_LOG",
   "/settings/ai": "OEM_HIDE_AI_SETTINGS",
   "/settings/license": "OEM_HIDE_LICENSE",
+  "/settings/verifications": "OEM_HIDE_VERIFIED_PAGES",
 };
 
 export default function SettingsSidebar() {
