@@ -251,6 +251,10 @@ export class EnvironmentService {
     return this.getBoolean('OEM_HIDE_LICENSE');
   }
 
+  isOemHideVerifiedPages(): boolean {
+    return this.getBoolean('OEM_HIDE_VERIFIED_PAGES');
+  }
+
   getOemAppName(): string {
     return this.configService.get<string>('OEM_APP_NAME', 'Docmost');
   }

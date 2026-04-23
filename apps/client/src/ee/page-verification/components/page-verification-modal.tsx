@@ -15,6 +15,7 @@ import { Feature } from "@/ee/features";
 import { SetupVerificationForm } from "./setup-verification-form";
 import { ManageVerificationForm } from "./manage-verification-form";
 import { getStatusColor, getStatusLabel } from "./verification-status";
+import { isOemFeatureHidden } from "@/lib/config.ts";
 
 type PageVerificationModalProps = {
   pageId: string;
@@ -74,6 +75,10 @@ type PageVerificationBadgeProps = {
 export function PageVerificationBadge({
   readOnly,
 }: PageVerificationBadgeProps) {
+  if (isOemFeatureHidden("OEM_HIDE_VERIFIED_PAGES")) {
+    return null;
+  }
+
   const { t } = useTranslation();
   const { pageSlug } = useParams();
   const pageSlugId = extractPageSlugId(pageSlug);
@@ -150,6 +155,10 @@ export function PageVerificationMenuItem({
   pageId,
   onClick,
 }: PageVerificationMenuItemProps) {
+  if (isOemFeatureHidden("OEM_HIDE_VERIFIED_PAGES")) {
+    return null;
+  }
+
   const { t } = useTranslation();
   const hasVerificationFeature = useHasFeature(Feature.PAGE_VERIFICATION);
   const upgradeLabel = useUpgradeLabel();

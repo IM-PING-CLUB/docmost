@@ -46,6 +46,8 @@ export class StaticModule implements OnModuleInit {
         OEM_HIDE_VERSION_UPDATE:
           this.environmentService.isOemHideVersionUpdate(),
         OEM_HIDE_LICENSE: this.environmentService.isOemHideLicense(),
+        OEM_HIDE_VERIFIED_PAGES:
+          this.environmentService.isOemHideVerifiedPages(),
         OEM_APP_NAME: this.environmentService.getOemAppName(),
         FILE_UPLOAD_SIZE_LIMIT:
           this.environmentService.getFileUploadSizeLimit(),

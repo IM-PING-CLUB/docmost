@@ -46,6 +46,7 @@ describe('StaticModule', () => {
       isOemHideAiSettings: jest.fn().mockReturnValue(true),
       isOemHideVersionUpdate: jest.fn().mockReturnValue(true),
       isOemHideLicense: jest.fn().mockReturnValue(true),
+      isOemHideVerifiedPages: jest.fn().mockReturnValue(true),
       getOemAppName: jest.fn().mockReturnValue('Ping 云文档'),
     } as any;
 
@@ -64,6 +65,7 @@ describe('StaticModule', () => {
     expect(transformedHtml).toContain('"OEM_HIDE_AI_SETTINGS":true');
     expect(transformedHtml).toContain('"OEM_HIDE_VERSION_UPDATE":true');
     expect(transformedHtml).toContain('"OEM_HIDE_LICENSE":true');
+    expect(transformedHtml).toContain('"OEM_HIDE_VERIFIED_PAGES":true');
     expect(transformedHtml).toContain('"OEM_APP_NAME":"Ping 云文档"');
   });
 });

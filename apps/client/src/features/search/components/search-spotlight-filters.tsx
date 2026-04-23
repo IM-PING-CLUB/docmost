@@ -27,6 +27,7 @@ import { Feature } from "@/ee/features";
 import classes from "./search-spotlight-filters.module.css";
 import { useAtom } from "jotai";
 import { workspaceAtom } from "@/features/user/atoms/current-user-atom.ts";
+import { isOemMode } from "@/lib/config.ts";
 
 interface SearchSpotlightFiltersProps {
   onFiltersChange?: (filters: any) => void;
@@ -89,7 +90,7 @@ export function SearchSpotlightFilters({
       label: t("Attachments"),
       disabled: !hasAttachmentIndexing,
     },
-  ];
+  ].filter((option) => !(isOemMode() && option.disabled));
 
   const handleSpaceSelect = (spaceId: string | null) => {
     setSelectedSpaceId(spaceId);

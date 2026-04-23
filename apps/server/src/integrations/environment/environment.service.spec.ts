@@ -18,6 +18,7 @@ describe('EnvironmentService', () => {
           OEM_HIDE_AI_SETTINGS: 'false',
           OEM_HIDE_VERSION_UPDATE: 'true',
           OEM_HIDE_LICENSE: 'true',
+          OEM_HIDE_VERIFIED_PAGES: 'true',
           OEM_APP_NAME: 'Ping 云文档',
         };
 
@@ -51,6 +52,7 @@ describe('EnvironmentService', () => {
     expect(service.isOemHideAiSettings()).toBe(false);
     expect(service.isOemHideVersionUpdate()).toBe(true);
     expect(service.isOemHideLicense()).toBe(true);
+    expect(service.isOemHideVerifiedPages()).toBe(true);
     expect(service.getOemAppName()).toBe('Ping 云文档');
   });
 });
