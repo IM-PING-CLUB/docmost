@@ -2,7 +2,6 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -11,8 +10,29 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { registerDecorator, ValidationOptions } from 'class-validator';
 import { UserRole } from '../../../common/helpers/types/permission';
 import { NoUrls } from '../../../common/validators/no-urls.validator';
+
+function IsInviteName(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isInviteName',
+      target: object.constructor,
+      propertyName,
+      options: {
+        message: 'Each invite name must be 4-16 characters (letters, digits, underscore, hyphen)',
+        ...validationOptions,
+      },
+      validator: {
+        validate(value: unknown) {
+          if (typeof value !== 'string') return false;
+          return /^[a-zA-Z0-9_-]{4,16}$/.test(value);
+        },
+      },
+    });
+  };
+}
 
 export class InviteUserDto {
   @IsArray()
@@ -20,7 +40,7 @@ export class InviteUserDto {
     message: 'you cannot invite more than 50 users at a time',
   })
   @ArrayMinSize(1)
-  @IsEmail({}, { each: true })
+  @IsInviteName({ each: true })
   emails: string[];
 
   @IsOptional()

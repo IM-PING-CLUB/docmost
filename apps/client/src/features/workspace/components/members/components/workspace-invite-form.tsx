@@ -20,7 +20,7 @@ export function WorkspaceInviteForm({ onClose }: Props) {
 
   async function handleSubmit() {
     const validEmails = emails.filter((email) => {
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const regex = /^[a-zA-Z0-9_-]{4,16}$/;
       return regex.test(email);
     });
 
@@ -47,10 +47,10 @@ export function WorkspaceInviteForm({ onClose }: Props) {
         <TagsInput
           mt="sm"
           description={t(
-            "Enter valid email addresses separated by comma or space max_50",
+            "Enter usernames (4-16 chars, letters/digits/underscore/hyphen) separated by comma or space, max 50",
           )}
-          label={t("Invite by email")}
-          placeholder={t("enter valid emails addresses")}
+          label={t("Invite by username")}
+          placeholder={t("enter usernames")}
           variant="filled"
           splitChars={[",", " "]}
           maxDropdownHeight={200}
