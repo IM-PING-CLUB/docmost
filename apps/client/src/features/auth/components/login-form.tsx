@@ -25,7 +25,7 @@ import { AuthLayout } from "./auth-layout.tsx";
 
 const formSchema = z.object({
   email: z
-    .email()
+    .string()
     .min(1, { message: "email is required" }),
   password: z.string().min(1, { message: "Password is required" }),
 });
@@ -78,8 +78,7 @@ export function LoginForm() {
                 <TextInput
                   id="email"
                   type="email"
-                  label={t("Email")}
-                  placeholder="email@example.com"
+                  label={t("登录名")}
                   variant="filled"
                   {...form.getInputProps("email")}
                 />
