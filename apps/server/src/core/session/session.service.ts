@@ -10,27 +10,48 @@ import {
   AUDIT_CONTEXT_KEY,
 } from '../../common/middlewares/audit-context.middleware';
 import * as Bowser from 'bowser';
+import { RedisService } from '@nestjs-labs/nestjs-ioredis';
+import type { Redis } from 'ioredis';
+import { runOncePerPeriod } from '../../common/helpers';
 
 const MAX_SESSIONS_PER_USER = 25;
 const RETENTION_DAYS = 7;
+const CLEANUP_INTERVAL_SECONDS = 24 * 60 * 60;
+const SESSION_CLEANUP_PERIOD_KEY = 'job:session-cleanup:period';
+const SESSION_CLEANUP_LOCK_KEY = 'job:session-cleanup:lock';
+const SESSION_CLEANUP_LOCK_SECONDS = 60 * 60;
 
 @Injectable()
 export class SessionService {
   private readonly logger = new Logger(SessionService.name);
+  private readonly redis: Redis;
 
   constructor(
     private readonly tokenService: TokenService,
     private readonly userSessionRepo: UserSessionRepo,
     private readonly environmentService: EnvironmentService,
     private readonly cls: ClsService,
-  ) {}
+    private readonly redisService: RedisService,
+  ) {
+    this.redis = this.redisService.getOrThrow();
+  }
 
   @Interval('session-cleanup', 24 * 60 * 60 * 1000)
   async cleanupSessions() {
     try {
-      await this.userSessionRepo.deleteStale(RETENTION_DAYS);
-      await this.userSessionRepo.trimExcessSessions(MAX_SESSIONS_PER_USER);
-      this.logger.debug('Session cleanup completed');
+      const ran = await runOncePerPeriod({
+        redis: this.redis,
+        periodKey: SESSION_CLEANUP_PERIOD_KEY,
+        lockKey: SESSION_CLEANUP_LOCK_KEY,
+        periodSeconds: CLEANUP_INTERVAL_SECONDS,
+        lockSeconds: SESSION_CLEANUP_LOCK_SECONDS,
+        task: async () => {
+          await this.userSessionRepo.deleteStale(RETENTION_DAYS);
+          await this.userSessionRepo.trimExcessSessions(MAX_SESSIONS_PER_USER);
+        },
+      });
+
+      if (ran) this.logger.debug('Session cleanup completed');
     } catch (err) {
       this.logger.error('Session cleanup failed', err);
     }

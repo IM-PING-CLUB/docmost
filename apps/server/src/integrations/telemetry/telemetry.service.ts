@@ -5,19 +5,31 @@ import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@docmost/db/types/kysely.types';
 import { createHmac } from 'node:crypto';
 import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
+import { RedisService } from '@nestjs-labs/nestjs-ioredis';
+import type { Redis } from 'ioredis';
+import { runOncePerPeriod } from '../../common/helpers';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJson = require('./../../../package.json');
+
+const TELEMETRY_INTERVAL_SECONDS = 24 * 60 * 60;
+const TELEMETRY_PERIOD_KEY = 'job:telemetry:period';
+const TELEMETRY_LOCK_KEY = 'job:telemetry:lock';
+const TELEMETRY_LOCK_SECONDS = 60 * 60;
 
 @Injectable()
 export class TelemetryService {
   private readonly ENDPOINT_URL = 'https://tel.docmost.com/api/event';
+  private readonly redis: Redis;
 
   constructor(
     private readonly environmentService: EnvironmentService,
     @InjectKysely() private readonly db: KyselyDB,
     private readonly workspaceRepo: WorkspaceRepo,
     private schedulerRegistry: SchedulerRegistry,
-  ) {}
+    private readonly redisService: RedisService,
+  ) {
+    this.redis = this.redisService.getOrThrow();
+  }
 
   @Interval('telemetry', 24 * 60 * 60 * 1000)
   async sendTelemetry() {
@@ -31,54 +43,63 @@ export class TelemetryService {
         return;
       }
 
-      const workspace = await this.workspaceRepo.findFirst();
-      if (!workspace) {
-        return;
-      }
+      await runOncePerPeriod({
+        redis: this.redis,
+        periodKey: TELEMETRY_PERIOD_KEY,
+        lockKey: TELEMETRY_LOCK_KEY,
+        periodSeconds: TELEMETRY_INTERVAL_SECONDS,
+        lockSeconds: TELEMETRY_LOCK_SECONDS,
+        task: async () => {
+          const workspace = await this.workspaceRepo.findFirst();
+          if (!workspace) {
+            return;
+          }
 
-      const anonymizedHash = createHmac(
-        'sha256',
-        this.environmentService.getAppSecret(),
-      )
-        .update(workspace.id)
-        .digest('hex');
+          const anonymizedHash = createHmac(
+            'sha256',
+            this.environmentService.getAppSecret(),
+          )
+            .update(workspace.id)
+            .digest('hex');
 
-      const { userCount } = await this.db
-        .selectFrom('users')
-        .select((eb) => eb.fn.count('id').as('userCount'))
-        .executeTakeFirst();
+          const { userCount } = await this.db
+            .selectFrom('users')
+            .select((eb) => eb.fn.count('id').as('userCount'))
+            .executeTakeFirst();
 
-      const { pageCount } = await this.db
-        .selectFrom('pages')
-        .select((eb) => eb.fn.count('id').as('pageCount'))
-        .executeTakeFirst();
+          const { pageCount } = await this.db
+            .selectFrom('pages')
+            .select((eb) => eb.fn.count('id').as('pageCount'))
+            .executeTakeFirst();
 
-      const { workspaceCount } = await this.db
-        .selectFrom('workspaces')
-        .select((eb) => eb.fn.count('id').as('workspaceCount'))
-        .executeTakeFirst();
+          const { workspaceCount } = await this.db
+            .selectFrom('workspaces')
+            .select((eb) => eb.fn.count('id').as('workspaceCount'))
+            .executeTakeFirst();
 
-      const { spaceCount } = await this.db
-        .selectFrom('spaces')
-        .select((eb) => eb.fn.count('id').as('spaceCount'))
-        .executeTakeFirst();
+          const { spaceCount } = await this.db
+            .selectFrom('spaces')
+            .select((eb) => eb.fn.count('id').as('spaceCount'))
+            .executeTakeFirst();
 
-      const data = {
-        instanceId: anonymizedHash,
-        version: packageJson.version,
-        userCount,
-        pageCount,
-        spaceCount,
-        workspaceCount,
-      };
+          const data = {
+            instanceId: anonymizedHash,
+            version: packageJson.version,
+            userCount,
+            pageCount,
+            spaceCount,
+            workspaceCount,
+          };
 
-      await fetch(this.ENDPOINT_URL, {
-        method: 'POST',
-        headers: {
-          'User-Agent': 'docmost:' + data.version,
-          'Content-Type': 'application/json',
+          await fetch(this.ENDPOINT_URL, {
+            method: 'POST',
+            headers: {
+              'User-Agent': 'docmost:' + data.version,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
         },
-        body: JSON.stringify(data),
       });
     } catch (err) {
       /* empty */

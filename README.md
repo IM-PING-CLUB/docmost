@@ -14,6 +14,40 @@
 
 To get started with Docmost, please refer to our [documentation](https://docmost.com/docs) or try our [cloud version](https://docmost.com/pricing) .
 
+## Local development
+
+Install dependencies and create a local environment file:
+
+```bash
+pnpm install
+cp .env.example .env
+```
+
+Update `.env` with your local configuration, including `APP_SECRET`, `DATABASE_URL`, `REDIS_URL`, and storage settings.
+
+Run database migrations:
+
+```bash
+pnpm --filter ./apps/server run migration:latest
+```
+
+Start the frontend and backend development servers:
+
+```bash
+pnpm dev
+```
+
+This runs both `pnpm run client:dev` and `pnpm run server:dev`.
+
+To start only one side:
+
+```bash
+pnpm run client:dev
+pnpm run server:dev
+```
+
+Production Docker startup is different: `pnpm start` starts the server only, and the server serves the already-built client files from `apps/client/dist`.
+
 ## Features
 
 - Real-time collaboration
