@@ -18,6 +18,8 @@ import { PageAccessModule } from './page/page-access/page-access.module';
 import { DomainMiddleware } from '../common/middlewares/domain.middleware';
 import { AuditContextMiddleware } from '../common/middlewares/audit-context.middleware';
 import { ShareModule } from './share/share.module';
+import { PublicSpaceModule } from './public-space/public-space.module';
+import { LabelModule } from './label/label.module';
 import { NotificationModule } from './notification/notification.module';
 import { WatcherModule } from './watcher/watcher.module';
 import { FavoriteModule } from './favorite/favorite.module';
@@ -39,6 +41,8 @@ import { ClsMiddleware } from 'nestjs-cls';
     CaslModule,
     PageAccessModule,
     ShareModule,
+    PublicSpaceModule,
+    LabelModule,
     NotificationModule,
     WatcherModule,
     SessionModule,

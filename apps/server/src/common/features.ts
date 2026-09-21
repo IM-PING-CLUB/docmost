@@ -8,6 +8,7 @@ export const Feature = {
   AI: 'ai',
   CONFLUENCE_IMPORT: 'import:confluence',
   DOCX_IMPORT: 'import:docx',
+  PDF_IMPORT: 'import:pdf',
   ATTACHMENT_INDEXING: 'attachment:indexing',
   SECURITY_SETTINGS: 'security:settings',
   MCP: 'mcp',
@@ -19,6 +20,14 @@ export const Feature = {
   VIEWER_COMMENTS: 'comment:viewer',
   TEMPLATES: 'templates',
   PDF_EXPORT: 'export:pdf',
+  PERSONAL_SPACES: 'spaces:personal',
+  DOCX_EXPORT: 'export:docx',
+  BASES: 'bases',
+  OAUTH: 'oauth',
+  AI_CONTROLS: 'ai:controls',
+  MCP_CONTROLS: 'mcp:controls',
+  PUBLIC_SPACE_APPEARANCE: 'public-space:appearance',
+  SIEM: 'siem',
 } as const;
 
 export type FeatureKey = (typeof Feature)[keyof typeof Feature];

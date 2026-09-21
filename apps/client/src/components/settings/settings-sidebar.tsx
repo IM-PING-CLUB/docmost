@@ -31,6 +31,7 @@ import {
   prefetchBilling,
   prefetchGroups,
   prefetchLicense,
+  prefetchScimTokens,
   prefetchShares,
   prefetchSpaces,
   prefetchSsoProviders,
@@ -117,7 +118,7 @@ const groupedData: DataGroup[] = [
         role: "admin",
       },
       {
-        label: "Audit log",
+        label: "Audit logs & SIEM",
         icon: IconHistory,
         path: "/settings/audit",
         feature: Feature.AUDIT_LOGS,
@@ -216,7 +217,10 @@ export default function SettingsSidebar() {
               }
               break;
             case "Security & SSO":
-              prefetchHandler = prefetchSsoProviders;
+              prefetchHandler = () => {
+                prefetchSsoProviders();
+                prefetchScimTokens();
+              };
               break;
             case "Public sharing":
               prefetchHandler = prefetchShares;
@@ -227,7 +231,7 @@ export default function SettingsSidebar() {
             case "API management":
               prefetchHandler = prefetchApiKeyManagement;
               break;
-            case "Audit log":
+            case "Audit logs & SIEM":
               prefetchHandler = prefetchAuditLogs;
               break;
             case "Verified pages":
@@ -238,32 +242,6 @@ export default function SettingsSidebar() {
           }
 
           const isDisabled = isItemDisabled(item);
-          const linkElement = (
-            <Link
-              onMouseEnter={!isDisabled ? prefetchHandler : undefined}
-              className={classes.link}
-              data-active={active.startsWith(item.path) || undefined}
-              data-disabled={isDisabled || undefined}
-              key={item.label}
-              to={isDisabled ? "#" : item.path}
-              onClick={(e) => {
-                if (isDisabled) {
-                  e.preventDefault();
-                  return;
-                }
-                if (mobileSidebarOpened) {
-                  toggleMobileSidebar();
-                }
-              }}
-              style={{
-                opacity: isDisabled ? 0.5 : 1,
-                cursor: isDisabled ? "not-allowed" : "pointer",
-              }}
-            >
-              <item.icon className={classes.linkIcon} stroke={2} />
-              <span>{t(item.label)}</span>
-            </Link>
-          );
 
           if (isDisabled) {
             return (
@@ -273,12 +251,41 @@ export default function SettingsSidebar() {
                 position="right"
                 withArrow
               >
-                {linkElement}
+                <span
+                  className={classes.link}
+                  data-disabled
+                  role="link"
+                  aria-disabled="true"
+                  tabIndex={0}
+                  style={{
+                    opacity: 0.5,
+                    cursor: "not-allowed",
+                  }}
+                >
+                  <item.icon className={classes.linkIcon} stroke={2} />
+                  <span>{t(item.label)}</span>
+                </span>
               </Tooltip>
             );
           }
 
-          return linkElement;
+          return (
+            <Link
+              onMouseEnter={prefetchHandler}
+              className={classes.link}
+              data-active={active.startsWith(item.path) || undefined}
+              key={item.label}
+              to={item.path}
+              onClick={() => {
+                if (mobileSidebarOpened) {
+                  toggleMobileSidebar();
+                }
+              }}
+            >
+              <item.icon className={classes.linkIcon} stroke={2} />
+              <span>{t(item.label)}</span>
+            </Link>
+          );
         })}
       </div>
     );
@@ -296,7 +303,7 @@ export default function SettingsSidebar() {
           }}
           variant="transparent"
           c="gray"
-          aria-label="Back"
+          aria-label={t("Back")}
         >
           <IconArrowLeft stroke={2} />
         </ActionIcon>

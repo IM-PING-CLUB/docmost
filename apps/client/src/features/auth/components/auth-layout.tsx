@@ -21,7 +21,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           {getAppName()}
         </Text>
       </Group>
-      {children}
+      <main>{children}</main>
     </>
   );
 }

@@ -3,6 +3,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Server, Socket } from 'socket.io';
 import { PagePermissionRepo } from '@docmost/db/repos/page/page-permission.repo';
+import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { SpaceRole } from '../common/helpers/types/permission';
 import {
   TREE_EVENTS,
   WS_SPACE_RESTRICTION_CACHE_PREFIX,
@@ -18,6 +20,7 @@ export class WsService {
   constructor(
     private readonly pagePermissionRepo: PagePermissionRepo,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly spaceMemberRepo: SpaceMemberRepo,
   ) {}
 
   setServer(server: Server): void {
@@ -28,6 +31,18 @@ export class WsService {
     const room = getSpaceRoomName(data.spaceId);
 
     if (!client.rooms.has(room)) {
+      return;
+    }
+
+    const userSpaceRoles = await this.spaceMemberRepo.getUserSpaceRoles(
+      client.data.userId,
+      data.spaceId,
+    );
+    const canPublish = userSpaceRoles?.some(
+      ({ role }) => role === SpaceRole.ADMIN || role === SpaceRole.WRITER,
+    );
+
+    if (!canPublish) {
       return;
     }
 
@@ -54,7 +69,7 @@ export class WsService {
       return;
     }
 
-    await this.broadcastToAuthorizedUsers(room, client.data.userId, pageId, data);
+    await this.broadcastToAuthorizedUsers(room, client.id, pageId, data);
   }
 
   async invalidateSpaceRestrictionCache(spaceId: string): Promise<void> {
@@ -115,14 +130,17 @@ export class WsService {
 
   private async broadcastToAuthorizedUsers(
     room: string,
-    excludeUserId: string | null,
+    excludeSocketId: string | null,
     pageId: string,
     data: any,
   ): Promise<void> {
     const sockets = await this.server.in(room).fetchSockets();
 
-    const otherSockets = excludeUserId
-      ? sockets.filter((s) => s.data.userId !== excludeUserId)
+    // Exclude only the originating socket, not every socket of the originating
+    // user. Excluding by userId silently dropped the originator's other tabs
+    // from receiving restricted-space tree events.
+    const otherSockets = excludeSocketId
+      ? sockets.filter((s) => s.id !== excludeSocketId)
       : sockets;
     if (otherSockets.length === 0) return;
 

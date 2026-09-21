@@ -51,6 +51,14 @@ export function isOemFeatureHidden(feature: string): boolean {
   return isOemMode() && castToBoolean(getConfigValue(feature));
 }
 
+export function isBetaPublicSpaces(): boolean {
+  return castToBoolean(getConfigValue("BETA_PUBLIC_SPACES"));
+}
+
+export function getAiVectorDriver(): string {
+  return getConfigValue("AI_VECTOR_DRIVER");
+}
+
 export function getAvatarUrl(
   avatarUrl: string,
   type: AvatarIconType = AvatarIconType.AVATAR,

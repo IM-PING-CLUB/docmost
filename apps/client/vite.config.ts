@@ -26,6 +26,8 @@ export default defineConfig(({ mode }) => {
     OEM_HIDE_LICENSE,
     OEM_APP_NAME,
     OEM_HIDE_VERIFIED_PAGES,
+    AI_VECTOR_DRIVER,
+    BETA_PUBLIC_SPACES,
   } = loadEnv(mode, envPath, "");
 
   return {
@@ -51,6 +53,8 @@ export default defineConfig(({ mode }) => {
         OEM_HIDE_LICENSE,
         OEM_APP_NAME,
         OEM_HIDE_VERIFIED_PAGES,
+        AI_VECTOR_DRIVER,
+        BETA_PUBLIC_SPACES,
       },
       APP_VERSION: JSON.stringify(process.env.npm_package_version),
     },
@@ -58,12 +62,12 @@ export default defineConfig(({ mode }) => {
     build: {
       rolldownOptions: {
         output: {
-          codeSplitting: {
+          advancedChunks: {
             groups: [
-              { name: "vendor-mantine", test: /@mantine/ },
-              { name: "vendor-mermaid", test: /mermaid|cytoscape|elkjs/ },
-              { name: "vendor-excalidraw", test: /excalidraw/ },
-              { name: "vendor-katex", test: /katex/ },
+              {
+                name: "vendor-mantine",
+                test: /[\\/]node_modules[\\/]@mantine[\\/]/,
+              },
             ],
           },
         },

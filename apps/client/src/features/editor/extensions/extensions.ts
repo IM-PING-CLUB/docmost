@@ -1,17 +1,20 @@
 import { markInputRule } from "@tiptap/core";
 import { StarterKit } from "@tiptap/starter-kit";
+import { TiptapDocument } from "@/features/editor/extensions/document";
 import { Code } from "@tiptap/extension-code";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
-import { Placeholder, CharacterCount } from "@tiptap/extensions";
+import { CharacterCount, UndoRedo } from "@tiptap/extensions";
+import { Placeholder } from "@/features/editor/extensions/placeholder";
 import { Superscript } from "@tiptap/extension-superscript";
 import SubScript from "@tiptap/extension-subscript";
 import { Typography } from "@tiptap/extension-typography";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
-import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { Youtube } from "@tiptap/extension-youtube";
-import SlashCommand, { SlashCommandExtension as Command } from "@/features/editor/extensions/slash-command";
+import SlashCommand, {
+  SlashCommandExtension as Command,
+} from "@/features/editor/extensions/slash-command";
 import renderItems from "@/features/editor/components/slash-menu/render-items";
 import getSuggestionItems from "@/features/editor/components/slash-menu/menu-items";
 import { Collaboration, isChangeOrigin } from "@tiptap/extension-collaboration";
@@ -41,17 +44,29 @@ import {
   Excalidraw,
   Embed,
   TiptapPdf,
+  PageBreak,
   SearchAndReplace,
   Mention,
   TableDndExtension,
+  TableHandleCommandsExtension,
+  TableHeaderPin,
+  TableReadonlySort,
   Subpages,
   Heading,
   Highlight,
+  Indent,
   UniqueID,
   SharedStorage,
   Columns,
   Column,
   Status,
+  TransclusionSource,
+  TransclusionReference,
+  TableView,
+  BaseEmbed as BaseEmbedNode,
+  Footnotes,
+  Footnote,
+  FootnoteReference,
 } from "@docmost/editor-ext";
 import {
   randomElement,
@@ -76,10 +91,13 @@ import AudioView from "@/features/editor/components/audio/audio-view.tsx";
 import AttachmentView from "@/features/editor/components/attachment/attachment-view.tsx";
 import CodeBlockView from "@/features/editor/components/code-block/code-block-view.tsx";
 import DrawioView from "../components/drawio/drawio-view";
-import ExcalidrawView from "@/features/editor/components/excalidraw/excalidraw-view.tsx";
+import ExcalidrawView from "@/features/editor/components/excalidraw/excalidraw-view-lazy.tsx";
 import EmbedView from "@/features/editor/components/embed/embed-view.tsx";
 import PdfView from "@/features/editor/components/pdf/pdf-view.tsx";
 import SubpagesView from "@/features/editor/components/subpages/subpages-view.tsx";
+import TransclusionView from "@/features/editor/components/transclusion/transclusion-view.tsx";
+import TransclusionReferenceView from "@/features/editor/components/transclusion/transclusion-reference-view.tsx";
+import { BaseEmbedView } from "@/features/editor/components/base-embed/base-embed-view.tsx";
 import { common, createLowlight } from "lowlight";
 import plaintext from "highlight.js/lib/languages/plaintext";
 import powershell from "highlight.js/lib/languages/powershell";
@@ -100,6 +118,8 @@ import { MarkdownClipboard } from "@/features/editor/extensions/markdown-clipboa
 import EmojiCommand from "./emoji-command";
 import { countWords } from "alfaaz";
 import AutoJoiner from "@/features/editor/extensions/autojoiner.ts";
+import GlobalDragHandle from "@/features/editor/extensions/drag-handle.ts";
+import { CleanStyles } from "@/features/editor/extensions/clean-styles.ts";
 
 const lowlight = createLowlight(common);
 lowlight.register("mermaid", plaintext);
@@ -116,6 +136,7 @@ lowlight.register("scala", scala);
 // @ts-ignore
 export const mainExtensions = [
   StarterKit.configure({
+    document: false,
     heading: false,
     undoRedo: false,
     link: false,
@@ -127,6 +148,7 @@ export const mainExtensions = [
     codeBlock: false,
     code: false,
   }),
+  TiptapDocument,
   // Override TipTap's Code extension to fix the inline code input rule.
   // The upstream regex /(^|[^`])`([^`]+)`(?!`)$/ captures the character
   // before the opening backtick as part of the match, causing markInputRule
@@ -167,7 +189,7 @@ export const mainExtensions = [
   SharedStorage,
   Heading,
   UniqueID.configure({
-    types: ["heading", "paragraph"],
+    types: ["heading", "paragraph", "transclusionSource"],
     filterTransaction: (transaction) => !isChangeOrigin(transaction),
   }),
   Placeholder.configure({
@@ -179,16 +201,19 @@ export const mainExtensions = [
         return i18n.t("Toggle title");
       }
       if (node.type.name === "paragraph") {
-        const $pos = editor.state.doc.resolve(pos);
-        const parentName = $pos.parent.type.name;
-        if (
-          parentName === "column" ||
-          parentName === "tableCell" ||
-          parentName === "tableHeader" ||
-          parentName === "callout" ||
-          parentName === "blockquote"
-        ) {
-          return i18n.t("Write...");
+        const doc = editor.state.doc;
+        if (pos >= 0 && pos <= doc.content.size) {
+          const parentName = doc.resolve(pos).parent.type.name;
+          if (
+            parentName === "column" ||
+            parentName === "tableCell" ||
+            parentName === "tableHeader" ||
+            parentName === "callout" ||
+            parentName === "blockquote" ||
+            parentName === "footnote"
+          ) {
+            return i18n.t("Write...");
+          }
         }
         return i18n.t('Write anything. Enter "/" for commands');
       }
@@ -197,6 +222,7 @@ export const mainExtensions = [
     showOnlyWhenEditable: true,
   }),
   TextAlign.configure({ types: ["heading", "paragraph"] }),
+  Indent,
   TaskList,
   TaskItem.configure({
     nested: true,
@@ -215,7 +241,10 @@ export const mainExtensions = [
   }),
   Typography,
   TrailingNode,
-  GlobalDragHandle,
+  GlobalDragHandle.configure({
+    customNodes: ["transclusionSource", "transclusionReference"],
+    atomNodes: ["base"],
+  }),
   TextStyle,
   Color,
   SlashCommand,
@@ -249,11 +278,16 @@ export const mainExtensions = [
     resizable: true,
     lastColumnResizable: true,
     allowTableNodeSelection: true,
+    cellMinWidth: 49,
+    View: TableView,
   }),
   TableRow,
   TableCell,
   TableHeader,
   TableDndExtension,
+  TableHandleCommandsExtension,
+  TableHeaderPin,
+  TableReadonlySort,
   MathInline.configure({
     view: MathInlineView,
   }),
@@ -305,6 +339,8 @@ export const mainExtensions = [
     view: CodeBlockView,
     //@ts-ignore
     lowlight,
+    enableTabIndentation: true,
+    tabSize: 2,
     HTMLAttributes: {
       spellcheck: false,
     },
@@ -345,15 +381,28 @@ export const mainExtensions = [
   TiptapPdf.configure({
     view: PdfView,
   }),
+  PageBreak,
   Subpages.configure({
     view: SubpagesView,
   }),
   Status.configure({
     view: StatusView,
   }),
+  TransclusionSource.configure({
+    view: TransclusionView,
+  }),
+  TransclusionReference.configure({
+    view: TransclusionReferenceView,
+  }),
+  BaseEmbedNode.extend({
+    addNodeView() {
+      return ReactNodeViewRenderer(BaseEmbedView);
+    },
+  }),
   MarkdownClipboard.configure({
     transformPastedText: true,
   }),
+  CleanStyles,
   CharacterCount.configure({
     wordCounter: (text) => countWords(text),
   }),
@@ -375,6 +424,9 @@ export const mainExtensions = [
   }).configure(),
   Columns,
   Column,
+  Footnotes,
+  Footnote,
+  FootnoteReference,
   AutoJoiner.configure({
     elementsToJoin: [],
   }),
@@ -387,13 +439,20 @@ const TEMPLATE_EXCLUDED_SLASH_ITEMS = new Set([
   "Video",
   "File attachment",
   "Draw.io (diagrams.net)",
-  "Excalidraw diagram",
+  "Excalidraw (Whiteboard)",
+  "Audio",
+  "Synced block",
+  "Base (Inline)",
+  "Kanban"
 ]);
 
 const TemplateSlashCommand = Command.configure({
   suggestion: {
     items: ({ query }: { query: string }) =>
-      getSuggestionItems({ query, excludeItems: TEMPLATE_EXCLUDED_SLASH_ITEMS }),
+      getSuggestionItems({
+        query,
+        excludeItems: TEMPLATE_EXCLUDED_SLASH_ITEMS,
+      }),
     render: renderItems,
   },
 });
@@ -401,6 +460,7 @@ const TemplateSlashCommand = Command.configure({
 export const templateExtensions = [
   ...mainExtensions.filter((ext: any) => ext !== SlashCommand),
   TemplateSlashCommand,
+  UndoRedo,
 ] as any;
 
 export const collabExtensions: CollabExtensions = (provider, user) => [

@@ -11,7 +11,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { registerDecorator, ValidationOptions } from 'class-validator';
-import { UserRole } from '../../../common/helpers/types/permission';
+import { InviteUserRole } from '../../../common/helpers/types/permission';
 import { NoUrls } from '../../../common/validators/no-urls.validator';
 
 function IsInviteName(validationOptions?: ValidationOptions) {
@@ -52,7 +52,7 @@ export class InviteUserDto {
   @IsUUID('all', { each: true })
   groupIds: string[];
 
-  @IsEnum(UserRole)
+  @IsEnum(InviteUserRole)
   role: string;
 }
 
