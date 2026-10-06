@@ -1476,5 +1476,13 @@
   "Test event delivered to {{name}}": "测试事件已发送到 {{name}}",
   "Updated SIEM destination": "已更新 SIEM 目标",
   "Verify TLS certificate": "验证 TLS 证书",
-  "e.g. Splunk prod": "例如：Splunk 生产环境"
+  "e.g. Splunk prod": "例如：Splunk 生产环境",
+  "Username or email": "用户名或邮箱",
+  "Enter usernames or emails": "请输入用户名或邮箱",
+  "Enter a username or email (1–254 characters, without whitespace or control characters)": "请输入有效的用户名或邮箱：1–254 个字符，不可包含空白或控制字符",
+  "Enter a username or email and press Enter after each one, up to 50. Use 1–254 characters without whitespace or control characters.": "输入用户名或邮箱后按回车确认，最多邀请 50 个账号。每个标识为 1–254 个字符，不可包含空白或控制字符。",
+  "Enter at least one username or email": "请至少输入一个用户名或邮箱",
+  "Invite up to 50 usernames or emails at a time": "每次最多邀请 50 个用户名或邮箱",
+  "Failed to send invitations. Please try again.": "邀请发送失败，请重试。",
+  "Password reset requires an email address. Accounts without an email cannot receive a reset link.": "找回密码需要邮箱地址。没有邮箱的账号无法接收密码重置链接。"
 }

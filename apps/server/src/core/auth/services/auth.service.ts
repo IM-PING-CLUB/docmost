@@ -43,6 +43,7 @@ import {
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventName } from '../../../common/events/event.contants';
+import { isEmailAccountIdentifier } from '../../../common/helpers/account-identifier';
 
 @Injectable()
 export class AuthService {
@@ -165,24 +166,32 @@ export class AuthService {
       resourceId: userId,
     });
 
-    const emailTemplate = ChangePasswordEmail({ username: user.name });
-    await this.mailService.sendToQueue({
-      to: user.email,
-      subject: 'Your password has been changed',
-      template: emailTemplate,
-    });
+    if (isEmailAccountIdentifier(user.email)) {
+      const emailTemplate = ChangePasswordEmail({ username: user.name });
+      await this.mailService.sendToQueue({
+        to: user.email,
+        subject: 'Your password has been changed',
+        template: emailTemplate,
+      });
+    }
   }
 
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto,
     workspace: Workspace,
   ): Promise<void> {
+    if (!isEmailAccountIdentifier(forgotPasswordDto.email)) return;
+
     const user = await this.userRepo.findByEmail(
       forgotPasswordDto.email,
       workspace.id,
     );
 
-    if (!user || isUserDisabled(user)) {
+    if (
+      !user ||
+      isUserDisabled(user) ||
+      !isEmailAccountIdentifier(user.email)
+    ) {
       return;
     }
 
@@ -294,12 +303,14 @@ export class AuthService {
       resourceId: user.id,
     });
 
-    const emailTemplate = ChangePasswordEmail({ username: user.name });
-    await this.mailService.sendToQueue({
-      to: user.email,
-      subject: 'Your password has been changed',
-      template: emailTemplate,
-    });
+    if (isEmailAccountIdentifier(user.email)) {
+      const emailTemplate = ChangePasswordEmail({ username: user.name });
+      await this.mailService.sendToQueue({
+        to: user.email,
+        subject: 'Your password has been changed',
+        template: emailTemplate,
+      });
+    }
 
     if (this.environmentService.isCloud() && !user.emailVerifiedAt) {
       await this.userRepo.updateUser(

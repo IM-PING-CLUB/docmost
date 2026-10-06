@@ -22,11 +22,13 @@ import { useWorkspacePublicDataQuery } from "@/features/workspace/queries/worksp
 import { Error404 } from "@/components/ui/error-404.tsx";
 import React from "react";
 import { AuthLayout } from "./auth-layout.tsx";
+import {
+  accountIdentifierSchema,
+  ACCOUNT_IDENTIFIER_ERROR,
+} from "@/features/auth/utils/account-identifier.ts";
 
 const formSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "email is required" }),
+  email: accountIdentifierSchema(),
   password: z.string().min(1, { message: "Password is required" }),
 });
 type FormValues = z.infer<typeof formSchema>;
@@ -43,7 +45,11 @@ export function LoginForm() {
   } = useWorkspacePublicDataQuery();
 
   const form = useForm<FormValues>({
-    validate: zod4Resolver(formSchema),
+    validate: zod4Resolver(
+      formSchema.extend({
+        email: accountIdentifierSchema(t(ACCOUNT_IDENTIFIER_ERROR)),
+      }),
+    ),
     initialValues: {
       email: "",
       password: "",
@@ -51,7 +57,8 @@ export function LoginForm() {
   });
 
   async function onSubmit(data: FormValues) {
-    await signIn(data);
+    const { email, password } = formSchema.parse(data);
+    await signIn({ email, password });
   }
 
   function handleValidationFailure(errors: Record<string, unknown>) {
@@ -62,7 +69,7 @@ export function LoginForm() {
   }
 
   if (isDataLoading) {
-   return null;
+    return null;
   }
 
   if (isError && error?.["response"]?.status === 404) {
@@ -84,10 +91,10 @@ export function LoginForm() {
               <form onSubmit={form.onSubmit(onSubmit, handleValidationFailure)}>
                 <TextInput
                   id="email"
-                  type="email"
-                  label={t("登录名")}
+                  type="text"
+                  label={t("Username or email")}
                   variant="filled"
-                  autoComplete="email"
+                  autoComplete="username"
                   errorProps={{ role: "alert" }}
                   {...form.getInputProps("email")}
                 />

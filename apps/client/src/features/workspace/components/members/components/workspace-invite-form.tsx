@@ -6,6 +6,8 @@ import { userRoleData } from "@/features/workspace/types/user-role-data.ts";
 import { useCreateInvitationMutation } from "@/features/workspace/queries/workspace-query.ts";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { z } from "zod/v4";
+import { accountIdentifierSchema } from "@/features/auth/utils/account-identifier.ts";
 
 interface Props {
   onClose: () => void;
@@ -13,22 +15,37 @@ interface Props {
 export function WorkspaceInviteForm({ onClose }: Props) {
   const { t } = useTranslation();
   const [emails, setEmails] = useState<string[]>([]);
+  const [searchValue, setSearchValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(UserRole.MEMBER);
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const createInvitationMutation = useCreateInvitationMutation();
   const navigate = useNavigate();
 
   async function handleSubmit() {
-    const validEmails = emails.filter((email) => {
-      const regex = /^[a-zA-Z0-9_-]{4,16}$/;
-      return regex.test(email);
-    });
+    const identifiers = searchValue !== "" ? [...emails, searchValue] : emails;
+    const result = z
+      .array(accountIdentifierSchema())
+      .min(1, { message: "Enter at least one username or email" })
+      .max(50, { message: "Invite up to 50 usernames or emails at a time" })
+      .safeParse(identifiers);
 
-    await createInvitationMutation.mutateAsync({
-      role: role.toLowerCase(),
-      emails: validEmails,
-      groupIds: groupIds,
-    });
+    if (!result.success) {
+      setError(t(result.error.issues[0].message));
+      return;
+    }
+
+    setError(null);
+    try {
+      await createInvitationMutation.mutateAsync({
+        role: (role ?? UserRole.MEMBER).toLowerCase(),
+        emails: [...new Set(result.data)],
+        groupIds: groupIds,
+      });
+    } catch {
+      setError(t("Failed to send invitations. Please try again."));
+      return;
+    }
 
     onClose();
 
@@ -42,20 +59,23 @@ export function WorkspaceInviteForm({ onClose }: Props) {
   return (
     <>
       <Box maw="500" mx="auto">
-        {/*<WorkspaceInviteSection /> */}
-
         <TagsInput
           mt="sm"
           description={t(
-            "Enter usernames (4-16 chars, letters/digits/underscore/hyphen) separated by comma or space, max 50",
+            "Enter a username or email and press Enter after each one, up to 50. Use 1–254 characters without whitespace or control characters.",
           )}
-          label={t("Invite by username")}
-          placeholder={t("enter usernames")}
+          label={t("Username or email")}
+          placeholder={t("Enter usernames or emails")}
           variant="filled"
-          splitChars={[",", " "]}
+          splitChars={[]}
           maxDropdownHeight={200}
-          maxTags={50}
+          value={emails}
           onChange={setEmails}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          acceptValueOnBlur={false}
+          error={error}
+          errorProps={{ role: "alert" }}
           data-autofocus
           autoComplete="off"
           data-1p-ignore

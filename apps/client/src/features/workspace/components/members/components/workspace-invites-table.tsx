@@ -31,7 +31,7 @@ export default function WorkspaceInvitesTable() {
         <Table highlightOnHover verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>{t("Email")}</Table.Th>
+              <Table.Th>{t("Username or email")}</Table.Th>
               <Table.Th>{t("Role")}</Table.Th>
               <Table.Th>{t("Date")}</Table.Th>
               <Table.Th aria-label={t("Action")} />
@@ -57,7 +57,12 @@ export default function WorkspaceInvitesTable() {
                 <Table.Td>{timeAgo(invitation.createdAt)}</Table.Td>
 
                 <Table.Td>
-                  {isAdmin && <InviteActionMenu invitationId={invitation.id} />}
+                  {isAdmin && (
+                    <InviteActionMenu
+                      invitationId={invitation.id}
+                      email={invitation.email}
+                    />
+                  )}
                 </Table.Td>
               </Table.Tr>
             ))}

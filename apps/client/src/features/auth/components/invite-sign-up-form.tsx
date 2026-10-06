@@ -90,8 +90,8 @@ export function InviteSignUpForm() {
 
               <TextInput
                 id="email"
-                type="email"
-                label={t("Email")}
+                type="text"
+                label={t("Username or email")}
                 value={invitation.email}
                 disabled
                 variant="filled"

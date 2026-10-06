@@ -45,6 +45,10 @@ import {
   getWorkspaceDefaultPageEditMode,
   isAdminActingOnOwner,
 } from '../workspace.util';
+import {
+  isEmailAccountIdentifier,
+  normalizeAccountIdentifier,
+} from '../../../common/helpers/account-identifier';
 
 @Injectable()
 export class WorkspaceInvitationService {
@@ -122,7 +126,15 @@ export class WorkspaceInvitationService {
     workspace: Workspace,
     authUser: User,
   ): Promise<void> {
-    const { emails, role, groupIds } = inviteUserDto;
+    const { role, groupIds } = inviteUserDto;
+    const emails = [
+      ...new Set(
+        inviteUserDto.emails.map((email) => {
+          validateAllowedEmail(email, workspace);
+          return normalizeAccountIdentifier(email) as string;
+        }),
+      ),
+    ];
 
     if (isAdminActingOnOwner(authUser.role, role)) {
       throw new ForbiddenException();
@@ -136,13 +148,15 @@ export class WorkspaceInvitationService {
         const findExistingUsers = await this.db
           .selectFrom('users')
           .select(['email'])
-          .where('users.email', 'in', emails)
+          .where(sql`LOWER(users.email)`, 'in', emails)
           .where('users.workspaceId', '=', workspace.id)
           .execute();
 
         let existingUserEmails = [];
         if (findExistingUsers) {
-          existingUserEmails = findExistingUsers.map((user) => user.email);
+          existingUserEmails = findExistingUsers.map((user) =>
+            normalizeAccountIdentifier(user.email),
+          );
         }
 
         // filter out existing users
@@ -189,15 +203,15 @@ export class WorkspaceInvitationService {
 
     // do not send code to do nothing users
     if (invites) {
-      invites.forEach((invitation: WorkspaceInvitation) => {
-        this.sendInvitationMail(
+      for (const invitation of invites) {
+        await this.sendInvitationMail(
           invitation.id,
           invitation.email,
           invitation.token,
           authUser.name,
           workspace.hostname,
         );
-      });
+      }
 
       // Audit log for each invitation created
       for (const invitation of invites) {
@@ -252,7 +266,7 @@ export class WorkspaceInvitationService {
         newUser = await this.userRepo.insertUser(
           {
             name: dto.name,
-            email: invitation.email,
+            email: normalizeAccountIdentifier(invitation.email) as string,
             emailVerifiedAt: new Date(),
             password: dto.password,
             role: invitation.role,
@@ -320,7 +334,11 @@ export class WorkspaceInvitationService {
       workspace.id,
     );
 
-    if (invitedByUser) {
+    if (
+      invitedByUser &&
+      isEmailAccountIdentifier(newUser.email) &&
+      isEmailAccountIdentifier(invitedByUser.email)
+    ) {
       const emailTemplate = InvitationAcceptedEmail({
         invitedUserName: newUser.name,
         invitedUserEmail: newUser.email,
@@ -379,6 +397,12 @@ export class WorkspaceInvitationService {
 
     if (!invitation) {
       throw new BadRequestException('Invitation not found');
+    }
+
+    if (!isEmailAccountIdentifier(invitation.email)) {
+      throw new BadRequestException(
+        'This account has no email address. Copy the invitation link instead.',
+      );
     }
 
     const invitedByUser = await this.userRepo.findById(
@@ -465,6 +489,8 @@ export class WorkspaceInvitationService {
     invitedByName: string,
     hostname?: string,
   ): Promise<void> {
+    if (!isEmailAccountIdentifier(inviteeEmail)) return;
+
     const inviteLink = await this.buildInviteLink({
       invitationId,
       inviteToken,

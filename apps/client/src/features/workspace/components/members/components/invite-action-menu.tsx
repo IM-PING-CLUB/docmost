@@ -12,16 +12,19 @@ import { useClipboard } from "@/hooks/use-clipboard";
 import { getInviteLink } from "@/features/workspace/services/workspace-service.ts";
 import useUserRole from "@/hooks/use-user-role.tsx";
 import { isCloud } from "@/lib/config.ts";
+import { isEmailIdentifier } from "@/features/auth/utils/account-identifier.ts";
 
 interface Props {
   invitationId: string;
+  email: string;
 }
-export default function InviteActionMenu({ invitationId }: Props) {
+export default function InviteActionMenu({ invitationId, email }: Props) {
   const { t } = useTranslation();
   const resendInvitationMutation = useResendInvitationMutation();
   const revokeInvitationMutation = useRevokeInvitationMutation();
   const { isAdmin } = useUserRole();
   const clipboard = useClipboard();
+  const canResend = isEmailIdentifier(email);
 
   const handleCopyLink = async (invitationId: string) => {
     try {
@@ -39,6 +42,7 @@ export default function InviteActionMenu({ invitationId }: Props) {
   };
 
   const onResend = async () => {
+    if (!canResend) return;
     await resendInvitationMutation.mutateAsync({ invitationId });
   };
 
@@ -83,7 +87,7 @@ export default function InviteActionMenu({ invitationId }: Props) {
         </Menu.Target>
 
         <Menu.Dropdown>
-          {!isCloud() && (
+          {(!isCloud() || !canResend) && (
             <Menu.Item
               onClick={() => handleCopyLink(invitationId)}
               leftSection={<IconCopy size={16} />}
@@ -93,13 +97,15 @@ export default function InviteActionMenu({ invitationId }: Props) {
             </Menu.Item>
           )}
 
-          <Menu.Item
-            onClick={onResend}
-            leftSection={<IconSend size={16} />}
-            disabled={!isAdmin}
-          >
-            {t("Resend invitation")}
-          </Menu.Item>
+          {canResend && (
+            <Menu.Item
+              onClick={onResend}
+              leftSection={<IconSend size={16} />}
+              disabled={!isAdmin}
+            >
+              {t("Resend invitation")}
+            </Menu.Item>
+          )}
           <Menu.Divider />
           <Menu.Item
             c="red"

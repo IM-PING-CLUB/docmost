@@ -1,6 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import { Workspace } from '@docmost/db/types/entity.types';
 import { createHmac } from 'node:crypto';
+import {
+  isAccountIdentifier,
+  isEmailAccountIdentifier,
+  normalizeAccountIdentifier,
+} from '../../common/helpers/account-identifier';
 
 export function computeEmailSignature(
   email: string,
@@ -40,11 +45,21 @@ export function validateSsoEnforcement(workspace: Workspace) {
 }
 
 export function validateAllowedEmail(userEmail: string, workspace: Workspace) {
-  const emailParts = userEmail.split('@');
-  const emailDomain = emailParts[1].toLowerCase();
+  const identifier = normalizeAccountIdentifier(userEmail);
+  if (!isAccountIdentifier(identifier)) {
+    throw new BadRequestException('Invalid account identifier');
+  }
+  if (!workspace.emailDomains?.length) return;
+  if (!isEmailAccountIdentifier(identifier)) {
+    throw new BadRequestException(
+      'An email address with an approved domain is required for this workspace.',
+    );
+  }
+  const emailDomain = identifier.slice(identifier.lastIndexOf('@') + 1);
   if (
-    workspace.emailDomains?.length > 0 &&
-    !workspace.emailDomains.includes(emailDomain)
+    !workspace.emailDomains.some(
+      (domain) => domain.toLowerCase() === emailDomain,
+    )
   ) {
     throw new BadRequestException(
       `The email domain "${emailDomain}" is not approved for this workspace.`,

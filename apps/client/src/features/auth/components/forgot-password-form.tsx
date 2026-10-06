@@ -48,7 +48,10 @@ export function ForgotPasswordForm() {
             <TextInput
               id="email"
               type="email"
-              label="Email"
+              label={t("Email")}
+              description={t(
+                "Password reset requires an email address. Accounts without an email cannot receive a reset link.",
+              )}
               placeholder="email@example.com"
               variant="filled"
               {...form.getInputProps("email")}
