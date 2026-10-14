@@ -1,0 +1,71 @@
+# Build the current checkout: docker compose -f docker-compose.local.yml up -d --build
+services:
+  docmost:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      args:
+        OEM: ${OEM:-false}
+        OEM_HIDE_API_KEYS: ${OEM_HIDE_API_KEYS:-false}
+        OEM_HIDE_SECURITY_SSO: ${OEM_HIDE_SECURITY_SSO:-false}
+        OEM_HIDE_API_MANAGEMENT: ${OEM_HIDE_API_MANAGEMENT:-false}
+        OEM_HIDE_AUDIT_LOG: ${OEM_HIDE_AUDIT_LOG:-false}
+        OEM_HIDE_AI_SETTINGS: ${OEM_HIDE_AI_SETTINGS:-false}
+        OEM_HIDE_VERSION_UPDATE: ${OEM_HIDE_VERSION_UPDATE:-false}
+        OEM_HIDE_LICENSE: ${OEM_HIDE_LICENSE:-false}
+        OEM_APP_NAME: ${OEM_APP_NAME:-Docmost}
+        OEM_HIDE_VERIFIED_PAGES: ${OEM_HIDE_VERIFIED_PAGES:-false}
+    image: docmost-local:reset-password
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_URL: http://localhost:3002
+      PORT: 3000
+      APP_SECRET: ${APP_SECRET:?Set APP_SECRET in .env}
+      EXTERNAL_PASSWORD_RESET_SECRET: ${EXTERNAL_PASSWORD_RESET_SECRET:-}
+      DATABASE_URL: postgresql://docmost:STRONG_DB_PASSWORD@db:5432/docmost
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "127.0.0.1:3002:3000"
+    restart: unless-stopped
+    volumes:
+      - docmost:/app/data/storage
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: docmost
+      POSTGRES_USER: docmost
+      POSTGRES_PASSWORD: STRONG_DB_PASSWORD
+    ports:
+      - "127.0.0.1:15432:5432"
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docmost -d docmost"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:8
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:16379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  docmost:
+  db_data:
+  redis_data:
