@@ -36,7 +36,7 @@ export class ExternalPasswordResetFilter implements ExceptionFilter {
       .status(statusCode)
       .send({
         statusCode,
-        error,
+        success: false,
         message: messages.length ? messages.join('; ') : error,
       });
   }

@@ -82,10 +82,10 @@ curl --request POST 'https://docmost-uat.jxcq.work/api/auth/external-password-re
 接口不需要旧密码或邮件 token，不发送邮件、不返回登录凭证，也不修改邮箱验证状态或 MFA 配置。
 启用强制 SSO 的工作区拒绝此操作。
 
-成功响应遵循项目统一格式：
+新接口成功和失败均使用相同的三个字段：
 
 ```json
-{"data":{"success":true},"success":true,"status":200}
+{"statusCode":200,"success":true,"message":"Password reset successfully"}
 ```
 
 | HTTP 状态码 | 含义 |
@@ -116,10 +116,10 @@ PostgreSQL 和 Redis 分别映射到本机 `15432`、`16379`，供本机源码�
 若改用 `pnpm dev`，先停止应用容器以释放 3002：`docker compose -f docker-compose.local.yml stop docmost`。
 停止全部服务使用 `docker compose -f docker-compose.local.yml down`，不要加 `-v`，以保留数据。
 
-新接口的应用层错误统一返回 `statusCode`（数字）、`error`（字符串）、`message`（字符串）。参数校验有多个错误时，`message` 用分号连接。500 错误不返回内部细节。此格式仅作用于新接口的 Nest 异常处理，不改变其他接口；反向代理及请求解析阶段的错误可能由基础设施直接返回。
+新接口的成功和应用层错误统一返回 `statusCode`（数字）、`success`（布尔值）、`message`（字符串）。参数校验有多个错误时，`message` 用分号连接。500 错误不返回内部细节。此格式仅作用于新接口的 Nest 异常处理，不改变其他接口；反向代理及请求解析阶段的错误可能由基础设施直接返回。
 
 ```json
-{"statusCode":400,"error":"Bad Request","message":"email must be an email"}
+{"statusCode":400,"success":false,"message":"email must be an email"}
 ```
 
 本地 Compose 使用独立的 `Dockerfile.local`；原有 `Dockerfile` 和全局环境变量校验保持不变。专用密钥未配置或不足 32 个字符时，只拒绝新接口调用，不阻止应用启动。

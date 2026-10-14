@@ -131,13 +131,13 @@ describe('External password reset HTTP endpoint', () => {
     expect((await request(`Bearer ${secret}`, payload)).statusCode).toBe(400);
     expect(service.resetPassword).not.toHaveBeenCalled();
   });
-  it('uses the resolved workspace and returns the standard envelope without a login cookie', async () => {
+  it('uses the resolved workspace and returns the unified response without a login cookie', async () => {
     const response = await request(`Bearer ${secret}`);
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
-      data: { success: true },
       success: true,
-      status: 200,
+      statusCode: 200,
+      message: 'Password reset successfully',
     });
     expect(response.headers['set-cookie']).toBeUndefined();
     expect(service.resetPassword).toHaveBeenCalledWith(
@@ -153,7 +153,7 @@ describe('External password reset HTTP endpoint', () => {
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({
       statusCode: 404,
-      error: 'Not Found',
+      success: false,
       message: 'User not found',
     });
   });
@@ -164,11 +164,12 @@ describe('External password reset HTTP endpoint', () => {
     ]) {
       const body = response.json();
       expect(Object.keys(body).sort()).toEqual([
-        'error',
         'message',
         'statusCode',
+        'success',
       ]);
       expect(typeof body.message).toBe('string');
+      expect(body.success).toBe(false);
       expect(body.statusCode).toBe(response.statusCode);
     }
   });
@@ -180,7 +181,7 @@ describe('External password reset HTTP endpoint', () => {
     expect(response.statusCode).toBe(429);
     expect(response.json()).toEqual({
       statusCode: 429,
-      error: 'Too Many Requests',
+      success: false,
       message: 'Too many requests',
     });
   });
@@ -196,7 +197,7 @@ describe('External password reset HTTP endpoint', () => {
       expect(response.statusCode).toBe(500);
       expect(response.json()).toEqual({
         statusCode: 500,
-        error: 'Internal Server Error',
+        success: false,
         message: 'Internal Server Error',
       });
     } finally {
@@ -234,6 +235,18 @@ describe('External password reset HTTP endpoint', () => {
       statusCode: 404,
       error: 'Not Found',
       message: 'Unchanged error',
+    });
+  });
+  it('preserves the global success envelope on unrelated routes', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/unrelated/validate',
+      payload: { email: 'user@example.com', password: 'new-password' },
+    });
+    expect(response.json()).toEqual({
+      data: 'user@example.com',
+      success: true,
+      status: 201,
     });
   });
 });

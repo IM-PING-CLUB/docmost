@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { Workspace } from '@docmost/db/types/entity.types';
+import { SkipTransform } from '../../common/decorators/skip-transform.decorator';
 import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
 import {
   ALL_NAMED_THROTTLERS_SKIPPED,
@@ -26,6 +27,7 @@ import { ExternalPasswordResetFilter } from './external-password-reset.filter';
 export class ExternalPasswordResetController {
   constructor(private readonly service: ExternalPasswordResetService) {}
 
+  @SkipTransform()
   @Post('external-password-reset')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
@@ -33,6 +35,10 @@ export class ExternalPasswordResetController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     await this.service.resetPassword(dto, workspace);
-    return { success: true };
+    return {
+      statusCode: HttpStatus.OK,
+      success: true,
+      message: 'Password reset successfully',
+    };
   }
 }
